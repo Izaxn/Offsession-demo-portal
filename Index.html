@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OffSession</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { background: #0a0a0a; min-height: 100vh; color: #fff; font-family: 'DM Sans', sans-serif; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #0a0a0a; }
+    ::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.25); border-radius: 2px; }
+    select option { background: #0d1b2a; color: #fff; }
+
+    #app {
+      background: linear-gradient(160deg, #0a0a0a 0%, #0d1b2a 55%, #0a0f1a 100%);
+      min-height: 100vh;
+      max-width: 900px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    /* ── SCREEN BASE ── */
+    .screen { display: none; padding: 2.5rem 1.5rem 1rem; animation: fadeUp 0.6s ease both; }
+    .screen.active { display: block; }
+    .screen.center { display: none; min-height: 100vh; align-items: center; justify-content: center; flex-direction: column; }
+    .screen.center.active { display: flex; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── LANDING ── */
+    #landing { position: relative; overflow: hidden; text-align: center; padding: 2rem; }
+    .blob1 { position: absolute; top: 20%; left: 10%; width: 340px; height: 340px; background: radial-gradient(circle, rgba(201,168,76,0.07) 0%, transparent 70%); border-radius: 50%; pointer-events: none; }
+    .blob2 { position: absolute; bottom: 15%; right: 8%; width: 260px; height: 260px; background: radial-gradient(circle, rgba(13,27,42,0.8) 0%, transparent 70%); border-radius: 50%; pointer-events: none; }
+    .grid-bg { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: radial-gradient(rgba(201,168,76,0.04) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; }
+    .landing-inner { max-width: 580px; z-index: 1; }
+    .eyebrow { color: #c9a84c; font-size: 0.72rem; letter-spacing: 0.3em; font-weight: 700; margin-bottom: 1.6rem; text-transform: uppercase; opacity: 0.8; }
+    .landing-h1 { font-size: clamp(2.4rem, 6vw, 4rem); font-family: 'DM Serif Display', Georgia, serif; font-weight: 400; color: #fff; line-height: 1.1; margin-bottom: 1.2rem; letter-spacing: -0.02em; }
+    .landing-h1 span { color: #c9a84c; }
+    .landing-sub { color: rgba(255,255,255,0.5); font-size: 1.05rem; margin-bottom: 2.8rem; letter-spacing: 0.02em; line-height: 1.7; }
+
+    /* ── BUTTONS ── */
+    .btn-gold {
+      background: linear-gradient(135deg, #c9a84c 0%, #e8c96a 50%, #a87b2a 100%);
+      color: #0a0a0a; font-family: 'DM Sans', sans-serif; font-weight: 700;
+      letter-spacing: 0.08em; font-size: 0.95rem; padding: 0.9rem 2.4rem;
+      border-radius: 2px; border: none; cursor: pointer;
+      transition: transform 0.13s ease, box-shadow 0.13s ease;
+      box-shadow: 0 6px 28px rgba(201,168,76,0.35); text-transform: uppercase;
+    }
+    .btn-gold:hover { transform: scale(1.03); box-shadow: 0 8px 36px rgba(201,168,76,0.45); }
+    .btn-gold:active { transform: scale(0.96); }
+    .btn-gold.small { font-size: 0.78rem; padding: 0.5rem 1.2rem; }
+    .btn-back {
+      background: none; border: 1px solid rgba(201,168,76,0.25); color: rgba(201,168,76,0.7);
+      padding: 0.4rem 1rem; border-radius: 2px; cursor: pointer; font-size: 0.75rem;
+      letter-spacing: 0.08em; font-family: 'DM Sans', sans-serif; margin-bottom: 1.8rem;
+      transition: all 0.2s;
+    }
+    .btn-back:hover { border-color: rgba(201,168,76,0.6); color: #c9a84c; }
+    .btn-ghost {
+      background: none; border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.3);
+      padding: 0.35rem 0.8rem; border-radius: 2px; cursor: pointer; font-size: 0.7rem;
+      font-family: 'DM Sans', sans-serif; letter-spacing: 0.05em; transition: all 0.2s;
+    }
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.25); color: rgba(255,255,255,0.5); }
+    .btn-expand {
+      background: none; border: 1px solid rgba(201,168,76,0.25); color: rgba(201,168,76,0.8);
+      padding: 0.55rem 1.2rem; border-radius: 2px; cursor: pointer; font-size: 0.78rem;
+      letter-spacing: 0.1em; font-family: 'DM Sans', sans-serif; margin-bottom: 1rem; transition: all 0.2s;
+    }
+    .btn-expand:hover { background: rgba(201,168,76,0.06); }
+    .btn-remove {
+      background: none; border: none; color: rgba(255,80,80,0.5); cursor: pointer;
+      font-size: 0.85rem; padding: 0 0.3rem; transition: color 0.2s;
+    }
+    .btn-remove:hover { color: rgba(255,80,80,0.85); }
+
+    /* ── CARDS ── */
+    .card {
+      background: rgba(13,27,42,0.85); border: 1px solid rgba(201,168,76,0.1);
+      border-radius: 4px; padding: 1.6rem; transition: all 0.25s ease;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    .card.glow:hover {
+      border-color: rgba(201,168,76,0.5); transform: translateY(-3px);
+      box-shadow: 0 8px 40px rgba(201,168,76,0.12), 0 0 0 1px rgba(201,168,76,0.08);
+    }
+    .card.clickable { cursor: pointer; }
+
+    /* ── TAGS ── */
+    .tag {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em;
+      padding: 0.2rem 0.55rem; border-radius: 2px; text-transform: uppercase;
+      border: 1px solid; display: inline-block;
+    }
+    .tag.recommended { background: rgba(201,168,76,0.12); border-color: rgba(201,168,76,0.4); color: #c9a84c; }
+    .tag.caution { background: rgba(180,80,80,0.12); border-color: rgba(180,80,80,0.4); color: #e08080; }
+    .tag.active-tag { background: rgba(201,168,76,0.12); border-color: rgba(201,168,76,0.4); color: #c9a84c; }
+
+    /* ── INPUTS ── */
+    .input-field {
+      width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(201,168,76,0.2);
+      border-radius: 3px; padding: 0.85rem 1rem; color: #fff; font-size: 0.9rem;
+      font-family: 'DM Sans', sans-serif; outline: none; transition: border-color 0.2s;
+    }
+    .input-field:focus { border-color: rgba(201,168,76,0.5); }
+    .input-label { color: rgba(255,255,255,0.45); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 0.4rem; }
+    .input-group { display: flex; flex-direction: column; gap: 1rem; }
+
+    /* ── SECTION HEADINGS ── */
+    .section-eyebrow { color: #c9a84c; font-size: 0.68rem; letter-spacing: 0.3em; opacity: 0.7; margin-bottom: 0.5rem; text-transform: uppercase; }
+    .section-h2 { font-family: 'DM Serif Display', Georgia, serif; font-size: 1.9rem; color: #fff; font-weight: 400; margin-bottom: 1.5rem; }
+
+    /* ── GRID LAYOUTS ── */
+    .grid-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
+    .grid-auto-sm { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+    .flex-col { display: flex; flex-direction: column; gap: 0.9rem; }
+
+    /* ── DASHBOARD ── */
+    .dash-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem; }
+    .dash-h1 { font-family: 'DM Serif Display', Georgia, serif; font-size: clamp(1.6rem,4vw,2.2rem); color: #fff; font-weight: 400; }
+    .dash-h1 span { color: #c9a84c; }
+    .dash-sub { color: rgba(255,255,255,0.35); font-size: 0.8rem; margin-top: 0.3rem; }
+    .card-icon { font-size: 1.5rem; margin-bottom: 0.7rem; color: #c9a84c; }
+    .card-title { font-family: 'DM Serif Display', Georgia, serif; font-size: 1.05rem; color: #fff; font-weight: 400; margin-bottom: 0.3rem; }
+    .card-sub { color: rgba(255,255,255,0.35); font-size: 0.78rem; }
+    .card-cta { color: #c9a84c; font-size: 0.72rem; letter-spacing: 0.1em; margin-top: 1rem; opacity: 0.7; }
+    .card-body { display: flex; flex-direction: column; justify-content: space-between; min-height: 130px; }
+
+    /* ── WORKOUT CARDS ── */
+    .ex-card { background: rgba(0,0,0,0.3); border: 1px solid rgba(201,168,76,0.1); border-radius: 3px; padding: 1.1rem 1.2rem; margin-bottom: 0.8rem; }
+    .ex-row { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem; }
+    .ex-name { color: #fff; font-size: 0.95rem; margin-bottom: 0.25rem; }
+    .ex-reps { color: #c9a84c; font-size: 0.78rem; margin-bottom: 0.3rem; }
+    .ex-benefit { color: rgba(255,255,255,0.4); font-size: 0.75rem; margin-bottom: 0.25rem; }
+    .ex-rest { color: rgba(255,255,255,0.3); font-size: 0.72rem; }
+    .btn-save {
+      background: none; border: 1px solid rgba(201,168,76,0.3); color: rgba(201,168,76,0.6);
+      padding: 0.3rem 0.7rem; border-radius: 2px; cursor: pointer; font-size: 0.68rem;
+      letter-spacing: 0.08em; font-family: 'DM Sans', sans-serif; white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .btn-save.saved { background: rgba(201,168,76,0.15); border-color: #c9a84c; color: #c9a84c; }
+    .ex-section-label { color: rgba(255,255,255,0.6); font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.8rem; }
+
+    /* ── NUTRITION ── */
+    .pill {
+      padding: 0.3rem 0.7rem; border-radius: 2px; font-size: 0.8rem; display: inline-block;
+      margin: 0.2rem;
+    }
+    .pill.eat { background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.25); color: #c9a84c; }
+    .pill.avoid { background: rgba(180,80,80,0.1); border: 1px solid rgba(180,80,80,0.25); color: #e08080; }
+    .nutrition-label { color: #c9a84c; font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.7rem; font-weight: 700; }
+    .nutrition-label.red { color: #e08080; }
+    .pills-wrap { display: flex; flex-wrap: wrap; }
+    .shake-text { color: rgba(255,255,255,0.7); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .shake-alt { color: rgba(255,255,255,0.35); font-size: 0.75rem; }
+
+    /* ── NUTRIENT SEARCH ── */
+    .nutrient-card { margin-bottom: 0.7rem; }
+    .nutrient-row { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .nutrient-badges { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+    .halal-yes { font-size: 0.68rem; color: #7ec87e; letter-spacing: 0.05em; }
+    .halal-check { font-size: 0.68rem; color: #c9a84c; letter-spacing: 0.05em; }
+    .nutrient-desc { color: rgba(255,255,255,0.5); font-size: 0.8rem; margin-bottom: 0.35rem; }
+    .nutrient-loss-yes { color: #7ec87e; font-size: 0.72rem; }
+    .nutrient-loss-no { color: #e08080; font-size: 0.72rem; }
+    .nutrient-disclaimer { color: rgba(255,255,255,0.2); font-size: 0.67rem; margin-top: 0.5rem; }
+
+    /* ── ROUTINES ── */
+    .routine-card { margin-bottom: 0; }
+    .routine-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    .routine-title-row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.3rem; }
+    .routine-icon { font-size: 1.1rem; }
+    .routine-title { color: #fff; font-size: 1rem; font-family: 'DM Serif Display', Georgia, serif; font-weight: 400; }
+    .routine-desc { color: rgba(255,255,255,0.35); font-size: 0.78rem; }
+    .routine-arrow { color: #c9a84c; font-size: 0.9rem; margin-left: 1rem; }
+    .routine-body { margin-top: 1rem; border-top: 1px solid rgba(201,168,76,0.1); padding-top: 1rem; display: none; }
+    .routine-body.open { display: block; }
+    .habit-list { list-style: none; padding: 0; margin: 0 0 1rem 0; }
+    .habit-item { color: rgba(255,255,255,0.6); font-size: 0.83rem; padding: 0.3rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; gap: 0.5rem; align-items: center; }
+    .habit-dot { color: #c9a84c; }
+
+    /* ── MY PLAN ── */
+    .plan-bp-label { color: #c9a84c; font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 0.6rem; }
+    .plan-ex-row { background: rgba(13,27,42,0.85); border: 1px solid rgba(201,168,76,0.1); border-radius: 3px; padding: 0.75rem 1rem; margin-bottom: 0.4rem; display: flex; justify-content: space-between; align-items: center; }
+    .plan-ex-name { color: #fff; font-size: 0.88rem; }
+    .plan-empty { color: rgba(255,255,255,0.35); text-align: center; padding: 2rem 0; font-size: 0.88rem; }
+    .plan-empty span { color: #c9a84c; font-size: 0.8rem; display: block; margin-top: 0.5rem; }
+
+    /* ── FOOTER ── */
+    .footer-bar { margin-top: 3rem; padding: 1.5rem 2rem; border-top: 1px solid rgba(201,168,76,0.1); text-align: center; }
+    .footer-text { color: rgba(255,255,255,0.28); font-size: 0.68rem; max-width: 600px; margin: 0 auto; line-height: 1.7; letter-spacing: 0.01em; }
+
+    /* ── SIGN UP ── */
+    #signup-wrap { width: 100%; max-width: 420px; }
+    .signup-center { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem; }
+    .signup-title { font-family: 'DM Serif Display', Georgia, serif; font-size: 2rem; color: #fff; font-weight: 400; margin-bottom: 0.5rem; }
+    .signup-goal { color: rgba(255,255,255,0.35); font-size: 0.85rem; }
+    .signup-goal span { color: #c9a84c; }
+    .error-text { color: #e08080; font-size: 0.8rem; display: none; }
+    .error-text.show { display: block; }
+
+    /* ── EXTRAS ── */
+    .workout-eyebrow { font-size: 0.68rem; letter-spacing: 0.3em; opacity: 0.8; margin-bottom: 0.4rem; text-transform: uppercase; }
+    .routine-active-row { display: flex; justify-content: space-between; align-items: center; }
+    .routine-active-name { color: #fff; font-size: 0.95rem; }
+    .routine-active-sub { color: rgba(255,255,255,0.3); font-size: 0.75rem; margin-top: 0.25rem; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ═══ LANDING ═══ -->
+  <div id="screen-landing" class="screen center active">
+    <div class="blob1"></div>
+    <div class="blob2"></div>
+    <div class="grid-bg"></div>
+    <div class="landing-inner">
+      <div class="eyebrow">◈ &nbsp; OFFSESSION &nbsp; ◈</div>
+      <h1 class="landing-h1">Your trainer.<br><span>Always with you.</span></h1>
+      <p class="landing-sub">Built for your journey. Personalized to you.</p>
+      <button class="btn-gold" onclick="showScreen('signup')">Get Started</button>
+    </div>
+  </div>
+
+  <!-- ═══ SIGN UP ═══ -->
+  <div id="screen-signup" class="screen center">
+    <div class="signup-center" style="min-height:unset;padding:0;">
+      <div id="signup-wrap">
+        <div style="text-align:center;margin-bottom:2.4rem;">
+          <div class="eyebrow" style="margin-bottom:1rem;">◈ OFFSESSION</div>
+          <h2 class="signup-title">Begin Your Journey</h2>
+          <p class="signup-goal">Your goal: <span>Weight Loss</span></p>
+        </div>
+        <div class="card">
+          <div class="input-group">
+            <div>
+              <label class="input-label">Full Name</label>
+              <input id="su-name" type="text" placeholder="Alex Johnson" class="input-field" />
+            </div>
+            <div>
+              <label class="input-label">Age</label>
+              <input id="su-age" type="number" placeholder="25" class="input-field" />
+            </div>
+            <div>
+              <label class="input-label">Weight (kg)</label>
+              <input id="su-weight" type="number" placeholder="75" class="input-field" />
+            </div>
+            <div>
+              <label class="input-label">Gender</label>
+              <select id="su-gender" class="input-field">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Prefer not to say">Prefer not to say</option>
+              </select>
+            </div>
+            <p id="su-error" class="error-text">Please fill all fields.</p>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:1.6rem;">
+          <button class="btn-gold" onclick="submitSignup()">Enter Your Portal</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ DASHBOARD ═══ -->
+  <div id="screen-dashboard" class="screen">
+    <div class="dash-header">
+      <div>
+        <div class="section-eyebrow">◈ OFFSESSION</div>
+        <h1 class="dash-h1">Welcome back, <span id="dash-name">—</span></h1>
+        <p class="dash-sub" id="dash-sub">Goal: Weight Loss</p>
+      </div>
+      <button class="btn-ghost" onclick="resetUser()">Not you?</button>
+    </div>
+    <div class="grid-auto" id="dash-grid"></div>
+    <div class="footer-bar"><p class="footer-text">OffSession is a client support tool. All content is for general guidance only and does not constitute medical, nutritional, or professional fitness advice. Always consult a qualified professional before making changes to your diet or exercise routine. OffSession and your trainer are not liable for any outcomes resulting from use of this platform.</p></div>
+  </div>
+
+  <!-- ═══ WORKOUTS HUB ═══ -->
+  <div id="screen-workouts" class="screen">
+    <button class="btn-back" onclick="showScreen('dashboard')">← BACK</button>
+    <div class="section-eyebrow">◈ WORKOUTS</div>
+    <h2 class="section-h2" style="margin-bottom:1.8rem;">Choose Your Focus</h2>
+    <div class="grid-auto-sm" id="workouts-grid"></div>
+    <div class="footer-bar"><p class="footer-text">OffSession is a client support tool. All content is for general guidance only and does not constitute medical, nutritional, or professional fitness advice. Always consult a qualified professional before making changes to your diet or exercise routine.</p></div>
+  </div>
+
+  <!-- ═══ WORKOUT DETAIL ═══ -->
+  <div id="screen-workout-detail" class="screen">
+    <button class="btn-back" onclick="showScreen('workouts')">← BACK</button>
+    <div id="wd-eyebrow" class="workout-eyebrow"></div>
+    <h2 id="wd-title" class="section-h2"></h2>
+    <h3 class="ex-section-label">Default Exercises</h3>
+    <div id="wd-default"></div>
+    <button class="btn-expand" id="wd-extra-btn" onclick="toggleExtra()">▸ SHOW EXTRA FOCUS (15–20 MIN)</button>
+    <div id="wd-extra" style="display:none;"></div>
+    <div class="footer-bar"><p class="footer-text">OffSession is a client support tool. All content is for general guidance only and does not constitute medical, nutritional, or professional fitness advice. Always consult a qualified professional before making changes to your diet or exercise routine.</p></div>
+  </div>
+
+  <!-- ═══ NUTRITION HUB ═══ -->
+  <div id="screen-nutrition" class="screen">
+    <button class="btn-back" onclick="showScreen('dashboard')">← BACK</button>
+    <div class="section-eyebrow">◇ NUTRITION</div>
+    <h2 class="section-h2">Nutrition &amp; Protein</h2>
+    <div class="grid-auto">
+      <div class="card glow clickable card-body" onclick="showScreen('nutrition-bodypart')">
+        <div>
+          <div class="card-icon">◈</div>
+          <div class="card-title">Body Part Nutrition</div>
+          <div class="card-sub">Chest · Back · Legs focused plans</div>
+        </div>
+        <div class="card-cta">OPEN →</div>
+      </div>
+      <div class="card glow clickable card-body" onclick="showScreen('nutrition-search')">
+        <div>
+          <div class="card-icon">◇</div>
+          <div class="card-title">Protein &amp; Nutrient Search</div>
+          <div class="card-sub">45+ entries with halal status</div>
+        </div>
+        <div class="card-cta">OPEN →</div>
+      </div>
+    </div>
+    <div class="footer-bar"><p class="footer-text">OffSession is a client support tool. All content is for general guidance only and does not constitute medical, nutritional, or professional fitness advice.</p></div>
+  </div>
+
+  <!-- ═══ NUTRITION BODYPART ═══ -->
+  <div id="screen-nutrition-bodypart" class="screen">
+    <button class="btn-back" id="nbp-back-btn" onclick="nbpBack()">← BACK</button>
+    <div id="nbp-hub">
+      <div class="section-eyebrow">◈ BODY PART NUTRITION</div>
+      <h2 class="section-h2">Choose Your Focus</h2>
+      <div class="grid-auto-sm" id="nbp-grid"></div>
+    </div>
+    <div id="nbp-detail" style="display:none;"></div>
+    <div class="footer-bar"><p class="footer-text">OffSession is a client support tool. All content is for general guidance only and does not constitute medical, nutritional, or professional fitness advice.</p></div>
+  </div>
+
+  <!-- ═══ NUTRIENT SEARCH ═══ -->
+  <div id="screen-nutrition-search" class="screen">
+    <button class="btn-back" onclick="showScreen('nutrition')">← BACK</button>
+    <div class="section-eyebrow">◇ PROTEIN &amp; NUTRIENTS</div>
+    <h2 class="section-h2">Protein &amp; Nutrient Search</h2>
+    <input id="nutrient-search-input" type="text" placeholder="Search nutrients, supplements..." class="input-field" style="margin-bottom:1.2rem;" oninput="renderNutrientSearch()" />
+    <div id="nutrient-results"></div>
+    <div class="footer-bar"><p class="footer-text">OffSession is a client support tool. All content is for general guidance only and does not constitute medical, nutritional, or professional fitness advice. Always consult a qualified professional before taking supplements.</p></div>
+  </div>
+
+  <!-- ═══ ROUTINES ═══ -->
+  <div id="screen-routines" class="screen">
+    <button class="btn-back" onclick="showScreen('dashboard')">← BACK</button>
+    <div class="section-eyebrow">◉ ROUTINES</div>
+    <h2 class="section-h2">Choose Your Protocol</h2>
+    <div class="flex-col" id="routines-list"></div>
+    <div class="footer-bar"><p class="footer-text">OffSession is a client support tool. All content is for general guidance only and does not constitute medical, nutritional, or professional fitness advice.</p></div>
+  </div>
+
+  <!-- ═══ MY PLAN ═══ -->
+  <div id="screen-myplan" class="screen">
+    <button class="btn-back" onclick="showScreen('dashboard')">← BACK</button>
+    <div class="section-eyebrow">◆ MY PLAN</div>
+    <h2 id="myplan-h2" class="section-h2"></h2>
+    <p style="color:rgba(255,255,255,0.3);font-size:0.8rem;margin-top:-1rem;margin-bottom:1.5rem;">Built by your trainer</p>
+    <div id="myplan-content"></div>
+    <div class="footer-bar"><p class="footer-text">OffSession is a client support tool. All content is for general guidance only and does not constitute medical, nutritional, or professional fitness advice.</p></div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════════════
+
+const EXERCISES = {
+  chest: {
+    label: "Chest", icon: "◈", color: "#c9a84c",
+    default: [
+      { name: "Push-Ups", reps: "3 × 15 reps", benefit: "Burns chest fat, builds endurance for metabolism boost", rest: "60s rest" },
+      { name: "Dumbbell Press", reps: "3 × 12 reps", benefit: "Activates pectoral muscles, increases calorie burn", rest: "75s rest" },
+      { name: "Incline Push-Ups", reps: "3 × 12 reps", benefit: "Targets upper chest, promotes lean muscle growth", rest: "60s rest" },
+    ],
+    extra: [
+      { name: "Slow Negative Push-Ups", reps: "3 × 8 reps (4s down)", benefit: "Deep muscle activation, time under tension for fat loss", rest: "90s rest" },
+      { name: "Chest Stretch Hold", reps: "3 × 30s hold", benefit: "Improves range of motion, reduces post-workout tightness", rest: "30s rest" },
+    ],
+    nutrition: {
+      eat: ["Eggs", "Greek yogurt", "Spinach", "Oats"],
+      avoid: ["Fried food", "Excess sodium", "Processed snacks"],
+      shake: "1 banana + oats + milk + honey + pinch of cinnamon",
+      alt: "Replace milk with almond milk",
+    },
+  },
+  back: {
+    label: "Back", icon: "◇", color: "#7b9eb8",
+    default: [
+      { name: "Superman Hold", reps: "3 × 20s hold", benefit: "Strengthens lower back, improves posture for better workouts", rest: "60s rest" },
+      { name: "Resistance Band Row", reps: "3 × 15 reps", benefit: "Activates back muscles, burns calories efficiently", rest: "60s rest" },
+      { name: "Bodyweight Row", reps: "3 × 10 reps", benefit: "Full back engagement, raises metabolic rate", rest: "75s rest" },
+    ],
+    extra: [
+      { name: "Cat-Cow Stretch", reps: "3 × 10 cycles", benefit: "Spine mobility, reduces lower back tension post-workout", rest: "30s rest" },
+      { name: "Lower Back Extensions", reps: "3 × 15 reps", benefit: "Targets erector spinae, supports fat loss posture", rest: "60s rest" },
+    ],
+    nutrition: {
+      eat: ["Salmon", "Sweet potato", "Leafy greens", "Brown rice"],
+      avoid: ["Alcohol", "Inflammatory oils", "Sugar"],
+      shake: "Spinach + banana + almond butter + water",
+      alt: "Replace almond butter with peanut butter",
+    },
+  },
+  legs: {
+    label: "Legs", icon: "◉", color: "#8a6bb5",
+    default: [
+      { name: "Bodyweight Squat", reps: "4 × 20 reps", benefit: "Largest muscle group activation = massive calorie burn", rest: "60s rest" },
+      { name: "Reverse Lunge", reps: "3 × 12 each leg", benefit: "Glute + quad activation, improves metabolic efficiency", rest: "60s rest" },
+      { name: "Glute Bridge", reps: "3 × 20 reps", benefit: "Posterior chain engagement, burns hip fat", rest: "45s rest" },
+    ],
+    extra: [
+      { name: "Wall Sit", reps: "3 × 45s hold", benefit: "Isometric burn, sustained calorie expenditure", rest: "60s rest" },
+      { name: "Single Leg Deadlift", reps: "3 × 10 each side", benefit: "Balance + posterior chain, improves fat burning mechanics", rest: "75s rest" },
+    ],
+    nutrition: {
+      eat: ["Chicken breast", "Lentils", "Broccoli", "Whole grain bread"],
+      avoid: ["Heavy carbs at night", "Carbonated drinks"],
+      shake: "Oats + milk + dates + banana",
+      alt: "Replace dates with honey",
+    },
+  },
+};
+
+const ROUTINES = [
+  { title: "Weight Loss Warrior", icon: "🔥", desc: "Structured mornings, zero sugar, maximum output. The baseline protocol.", habits: ["Morning walk — 20 mins fasted","Fasted cardio before first meal","3 litres water minimum","No added sugar all day","Weigh-in every Monday"] },
+  { title: "Busy Builder", icon: "⚡", desc: "For those with limited time. Precision over volume.", habits: ["20-min focused workout daily","Meal prep every Sunday","7 hours sleep minimum","One protein shake per day","Walk after every meal"] },
+  { title: "Clean Lifestyle", icon: "◈", desc: "Environment redesign. No junk, no shortcuts, no noise.", habits: ["Zero processed food","10,000 steps daily","Sleep by 11pm","Cook at home 6/7 days","30-min screen-off wind-down"] },
+  { title: "Double Speed", icon: "◆", desc: "Two sessions daily. Maximum adaptation. Not for beginners.", habits: ["Morning session with trainer","Evening extra focus (20 min)","High protein every meal","Cold shower post-workout","No calories after 8pm"] },
+];
+
+const NUTRIENTS = [
+  { name:"Whey Protein", desc:"Fast-digesting muscle protein, ideal post-workout.", loss:true, halal:"check", tag:"recommended" },
+  { name:"Casein Protein", desc:"Slow-release protein, best before sleep.", loss:true, halal:"check", tag:"recommended" },
+  { name:"Pea Protein", desc:"Plant-based complete protein, high digestibility.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Brown Rice Protein", desc:"Plant protein, good for muscle maintenance.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Hemp Protein", desc:"Contains all essential amino acids + omega-3.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Soy Protein", desc:"Complete plant protein, high in isoflavones.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Egg White Protein", desc:"High bioavailability, low fat, ideal for lean goals.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Collagen Protein", desc:"Supports joints and skin, low in essential amino acids.", loss:false, halal:"check", tag:"caution" },
+  { name:"Creatine Monohydrate", desc:"Increases strength and power output significantly.", loss:false, halal:"check", tag:"caution" },
+  { name:"BCAA", desc:"Reduces muscle breakdown during training.", loss:true, halal:"check", tag:"recommended" },
+  { name:"Glutamine", desc:"Gut health + recovery, anti-catabolic.", loss:true, halal:"check", tag:"recommended" },
+  { name:"Beta-Alanine", desc:"Delays muscle fatigue, improves endurance.", loss:true, halal:"check", tag:"recommended" },
+  { name:"Citrulline Malate", desc:"Improves blood flow and pump during workouts.", loss:true, halal:"check", tag:"recommended" },
+  { name:"Omega-3", desc:"Reduces inflammation, supports fat metabolism.", loss:true, halal:"check", tag:"recommended" },
+  { name:"Vitamin D3", desc:"Critical for testosterone, immunity, and bone density.", loss:true, halal:"check", tag:"recommended" },
+  { name:"Magnesium Glycinate", desc:"Sleep quality, muscle recovery, stress reduction.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Zinc", desc:"Testosterone support and immune function.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Iron", desc:"Prevents fatigue, supports oxygen delivery.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Calcium", desc:"Bone health, muscle contraction support.", loss:false, halal:"yes", tag:"caution" },
+  { name:"Vitamin B12", desc:"Energy production, nervous system health.", loss:true, halal:"check", tag:"recommended" },
+  { name:"Vitamin C", desc:"Antioxidant, immune support, collagen synthesis.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Potassium", desc:"Electrolyte balance, prevents cramping.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Sodium", desc:"Hydration and nerve function — don't overdo it.", loss:false, halal:"yes", tag:"caution" },
+  { name:"Fiber", desc:"Promotes satiety, regulates digestion.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Carbohydrates", desc:"Primary energy source — quality matters.", loss:false, halal:"yes", tag:"caution" },
+  { name:"Complex Carbs", desc:"Slow energy release, keeps you full longer.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Simple Sugars", desc:"Fast energy — minimise for fat loss.", loss:false, halal:"yes", tag:"caution" },
+  { name:"Healthy Fats", desc:"Hormone production, brain function, satiety.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"MCT Oil", desc:"Rapidly converted to energy, supports ketosis.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Coconut Oil", desc:"Medium-chain fats, antibacterial properties.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Olive Oil", desc:"Heart-healthy monounsaturated fats.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Almonds", desc:"High protein + healthy fats, great snack.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Walnuts", desc:"Omega-3 source, anti-inflammatory.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Chia Seeds", desc:"High fiber + omega-3, excellent for satiety.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Flaxseeds", desc:"Lignans + omega-3, hormonal balance.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Turmeric", desc:"Potent anti-inflammatory, recovery support.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Ginger", desc:"Digestive aid, mild thermogenic effect.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Green Tea Extract", desc:"EGCG increases fat oxidation.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"L-Carnitine", desc:"Transports fatty acids into cells for burning.", loss:true, halal:"check", tag:"recommended" },
+  { name:"Ashwagandha", desc:"Reduces cortisol, supports recovery and sleep.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Probiotics", desc:"Gut microbiome health, improved nutrient absorption.", loss:true, halal:"check", tag:"recommended" },
+  { name:"Electrolytes", desc:"Hydration, performance, and cramp prevention.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Spirulina", desc:"Dense superfood, high protein + micronutrients.", loss:true, halal:"yes", tag:"recommended" },
+  { name:"Moringa", desc:"Anti-inflammatory, rich in vitamins and amino acids.", loss:true, halal:"yes", tag:"recommended" },
+];
+
+const FOOTER_TEXT = "OffSession is a client support tool. All content is for general guidance only and does not constitute medical, nutritional, or professional fitness advice. Always consult a qualified professional before making changes to your diet or exercise routine. OffSession and your trainer are not liable for any outcomes resulting from use of this platform.";
+
+// ═══════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════
+
+let currentScreen = 'landing';
+let currentWorkoutKey = null;
+let extraOpen = false;
+let nbpActive = null;
+
+function getUser() {
+  try { return JSON.parse(localStorage.getItem('offsession_user')); } catch(e) { return null; }
+}
+function getPlan() {
+  try { return JSON.parse(localStorage.getItem('offsession_plan')) || { workouts: [], routine: null }; }
+  catch(e) { return { workouts: [], routine: null }; }
+}
+function savePlan(plan) {
+  localStorage.setItem('offsession_plan', JSON.stringify(plan));
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════════
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('screen-' + name);
+  if (el) {
+    el.classList.add('active');
+    // Force re-animation
+    el.style.animation = 'none';
+    el.offsetHeight;
+    el.style.animation = '';
+    currentScreen = name;
+  }
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'workouts') renderWorkoutsHub();
+  if (name === 'nutrition-bodypart') renderNBPHub();
+  if (name === 'nutrition-search') { renderNutrientSearch(); }
+  if (name === 'routines') renderRoutines();
+  if (name === 'myplan') renderMyPlan();
+  window.scrollTo(0,0);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SIGN UP
+// ═══════════════════════════════════════════════════════════════════
+
+function submitSignup() {
+  const name = document.getElementById('su-name').value.trim();
+  const age = document.getElementById('su-age').value.trim();
+  const weight = document.getElementById('su-weight').value.trim();
+  const gender = document.getElementById('su-gender').value;
+  const err = document.getElementById('su-error');
+  if (!name || !age || !weight) { err.classList.add('show'); return; }
+  err.classList.remove('show');
+  const user = { name, age, weight, gender, goal: 'Weight Loss' };
+  localStorage.setItem('offsession_user', JSON.stringify(user));
+  showScreen('dashboard');
+}
+
+function resetUser() {
+  localStorage.removeItem('offsession_user');
+  localStorage.removeItem('offsession_plan');
+  showScreen('landing');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════════════
+
+function renderDashboard() {
+  const user = getUser();
+  if (!user) { showScreen('landing'); return; }
+  document.getElementById('dash-name').textContent = user.name.split(' ')[0];
+  document.getElementById('dash-sub').textContent = `Goal: Weight Loss · ${user.weight}kg · ${user.gender}`;
+
+  const sections = [
+    { key: 'workouts', label: 'Workouts', icon: '◈', sub: 'Chest · Back · Legs' },
+    { key: 'nutrition', label: 'Nutrition & Protein', icon: '◇', sub: 'Fuel + Search' },
+    { key: 'routines', label: 'Routines', icon: '◉', sub: '4 Lifestyle Programs' },
+    { key: 'myplan', label: 'My Plan', icon: '◆', sub: 'Your saved content' },
+  ];
+
+  const grid = document.getElementById('dash-grid');
+  grid.innerHTML = sections.map(s => `
+    <div class="card glow clickable card-body" onclick="showScreen('${s.key}')">
+      <div>
+        <div class="card-icon">${s.icon}</div>
+        <div class="card-title">${s.label}</div>
+        <div class="card-sub">${s.sub}</div>
+      </div>
+      <div class="card-cta">OPEN →</div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// WORKOUTS
+// ═══════════════════════════════════════════════════════════════════
+
+function renderWorkoutsHub() {
+  const grid = document.getElementById('workouts-grid');
+  grid.innerHTML = Object.entries(EXERCISES).map(([key, ex]) => `
+    <div class="card glow clickable" style="text-align:center;padding:2.2rem 1.6rem;" onclick="openWorkout('${key}')">
+      <div style="font-size:2rem;color:${ex.color};margin-bottom:0.8rem;">${ex.icon}</div>
+      <div style="font-family:'DM Serif Display',Georgia,serif;font-size:1.4rem;color:#fff;font-weight:400;">${ex.label}</div>
+      <div style="color:rgba(255,255,255,0.3);font-size:0.78rem;margin-top:0.4rem;">3 exercises + Extra Focus</div>
+    </div>
+  `).join('');
+}
+
+function openWorkout(key) {
+  currentWorkoutKey = key;
+  extraOpen = false;
+  const ex = EXERCISES[key];
+  document.getElementById('wd-eyebrow').textContent = `${ex.icon} ${ex.label.toUpperCase()}`;
+  document.getElementById('wd-eyebrow').style.color = ex.color;
+  document.getElementById('wd-title').textContent = `${ex.label} Workout`;
+  document.getElementById('wd-extra-btn').textContent = '▸ SHOW EXTRA FOCUS (15–20 MIN)';
+  document.getElementById('wd-extra').style.display = 'none';
+
+  const plan = getPlan();
+  const renderEx = (e) => {
+    const savedKey = `${key}::${e.name}`;
+    const isSaved = (plan.workouts || []).includes(savedKey);
+    return `
+      <div class="ex-card">
+        <div class="ex-row">
+          <div style="flex:1;">
+            <div class="ex-name">${e.name}</div>
+            <div class="ex-reps">${e.reps}</div>
+            <div class="ex-benefit">${e.benefit}</div>
+            <div class="ex-rest">Rest: ${e.rest}</div>
+          </div>
+          <button class="btn-save ${isSaved ? 'saved' : ''}" onclick="saveExercise('${key}','${e.name}',this)">
+            ${isSaved ? '✓ SAVED' : '+ PLAN'}
+          </button>
+        </div>
+      </div>`;
+  };
+
+  document.getElementById('wd-default').innerHTML = ex.default.map(renderEx).join('');
+  document.getElementById('wd-extra').innerHTML = ex.extra.map(renderEx).join('');
+  showScreen('workout-detail');
+}
+
+function toggleExtra() {
+  extraOpen = !extraOpen;
+  const btn = document.getElementById('wd-extra-btn');
+  const el = document.getElementById('wd-extra');
+  el.style.display = extraOpen ? 'block' : 'none';
+  btn.textContent = extraOpen ? '▾ HIDE EXTRA FOCUS (15–20 MIN)' : '▸ SHOW EXTRA FOCUS (15–20 MIN)';
+}
+
+function saveExercise(bodyKey, name, btn) {
+  const plan = getPlan();
+  const k = `${bodyKey}::${name}`;
+  if ((plan.workouts || []).includes(k)) return;
+  plan.workouts = [...(plan.workouts || []), k];
+  savePlan(plan);
+  btn.classList.add('saved');
+  btn.textContent = '✓ SAVED';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// NUTRITION — BODY PART
+// ═══════════════════════════════════════════════════════════════════
+
+function renderNBPHub() {
+  nbpActive = null;
+  document.getElementById('nbp-hub').style.display = 'block';
+  document.getElementById('nbp-detail').style.display = 'none';
+  const grid = document.getElementById('nbp-grid');
+  grid.innerHTML = Object.entries(EXERCISES).map(([key, ex]) => `
+    <div class="card glow clickable" style="text-align:center;padding:1.8rem;" onclick="openNBP('${key}')">
+      <div style="font-size:1.6rem;color:${ex.color};margin-bottom:0.6rem;">${ex.icon}</div>
+      <div style="font-family:'DM Serif Display',Georgia,serif;color:#fff;font-weight:400;">${ex.label} Focus</div>
+    </div>
+  `).join('');
+}
+
+function openNBP(key) {
+  nbpActive = key;
+  const ex = EXERCISES[key];
+  const n = ex.nutrition;
+  document.getElementById('nbp-hub').style.display = 'none';
+  const det = document.getElementById('nbp-detail');
+  det.style.display = 'block';
+  det.innerHTML = `
+    <div style="color:${ex.color};font-size:0.68rem;letter-spacing:0.2em;margin-bottom:0.5rem;text-transform:uppercase;">${ex.icon} ${ex.label.toUpperCase()} NUTRITION</div>
+    <h2 style="font-family:'DM Serif Display',Georgia,serif;font-size:1.9rem;color:#fff;font-weight:400;margin-bottom:1.5rem;">${ex.label} Focus Nutrition</h2>
+    <div class="card" style="margin-bottom:1rem;">
+      <div class="nutrition-label">✓ EAT</div>
+      <div class="pills-wrap">${n.eat.map(f=>`<span class="pill eat">${f}</span>`).join('')}</div>
+    </div>
+    <div class="card" style="margin-bottom:1rem;">
+      <div class="nutrition-label red">✗ AVOID</div>
+      <div class="pills-wrap">${n.avoid.map(f=>`<span class="pill avoid">${f}</span>`).join('')}</div>
+    </div>
+    <div class="card">
+      <div class="nutrition-label">⚡ SIMPLE SHAKE</div>
+      <p class="shake-text">${n.shake}</p>
+      <p class="shake-alt">Alt: ${n.alt}</p>
+    </div>
+  `;
+}
+
+function nbpBack() {
+  if (nbpActive) {
+    renderNBPHub();
+  } else {
+    showScreen('nutrition');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// NUTRIENT SEARCH
+// ═══════════════════════════════════════════════════════════════════
+
+function renderNutrientSearch() {
+  const q = (document.getElementById('nutrient-search-input') || {}).value || '';
+  const results = q.trim()
+    ? NUTRIENTS.filter(n => n.name.toLowerCase().includes(q.toLowerCase()))
+    : NUTRIENTS;
+  const DISC = "This is general information. Individual results vary. Consult a doctor or nutritionist before starting any supplement.";
+  document.getElementById('nutrient-results').innerHTML = results.map(n => `
+    <div class="card nutrient-card" style="margin-bottom:0.7rem;">
+      <div class="nutrient-row">
+        <h4 style="color:#fff;font-size:0.95rem;">${n.name}</h4>
+        <div class="nutrient-badges">
+          <span class="tag ${n.tag}">${n.tag}</span>
+          <span class="${n.halal === 'yes' ? 'halal-yes' : 'halal-check'}">${n.halal === 'yes' ? '✓ Halal' : '⚠ Check Source'}</span>
+        </div>
+      </div>
+      <p class="nutrient-desc">${n.desc}</p>
+      <p class="${n.loss ? 'nutrient-loss-yes' : 'nutrient-loss-no'}">Weight Loss: ${n.loss ? '✓ Beneficial' : '— Not directly'}</p>
+      <p class="nutrient-disclaimer">${DISC}</p>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ROUTINES
+// ═══════════════════════════════════════════════════════════════════
+
+function renderRoutines() {
+  const plan = getPlan();
+  const list = document.getElementById('routines-list');
+  list.innerHTML = ROUTINES.map((r, i) => {
+    const isActive = plan.routine === r.title;
+    return `
+      <div class="card glow routine-card" id="routine-card-${i}">
+        <div class="routine-header" onclick="toggleRoutine(${i})">
+          <div>
+            <div class="routine-title-row">
+              <span class="routine-icon">${r.icon}</span>
+              <span class="routine-title">${r.title}</span>
+              ${isActive ? `<span class="tag active-tag">Active</span>` : ''}
+            </div>
+            <div class="routine-desc">${r.desc}</div>
+          </div>
+          <span class="routine-arrow" id="routine-arrow-${i}">▸</span>
+        </div>
+        <div class="routine-body" id="routine-body-${i}">
+          <ul class="habit-list">
+            ${r.habits.map(h=>`<li class="habit-item"><span class="habit-dot">◈</span>${h}</li>`).join('')}
+          </ul>
+          <button class="btn-gold small" onclick="selectRoutine('${r.title}',${i})">${isActive ? '✓ Selected' : 'Select This Routine'}</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleRoutine(i) {
+  const body = document.getElementById(`routine-body-${i}`);
+  const arrow = document.getElementById(`routine-arrow-${i}`);
+  const open = body.classList.toggle('open');
+  arrow.textContent = open ? '▾' : '▸';
+}
+
+function selectRoutine(title, i) {
+  const plan = getPlan();
+  plan.routine = title;
+  savePlan(plan);
+  renderRoutines();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MY PLAN
+// ═══════════════════════════════════════════════════════════════════
+
+function renderMyPlan() {
+  const user = getUser();
+  const plan = getPlan();
+  document.getElementById('myplan-h2').textContent = `Personalized for ${user ? user.name.split(' ')[0] : ''}`;
+
+  const workouts = plan.workouts || [];
+  const routine = plan.routine;
+
+  const grouped = {};
+  workouts.forEach(w => {
+    const [bp, name] = w.split('::');
+    if (!grouped[bp]) grouped[bp] = [];
+    grouped[bp].push(name);
+  });
+
+  let html = '';
+
+  if (Object.keys(grouped).length === 0 && !routine) {
+    html = `<div class="card"><p class="plan-empty">No exercises or routines saved yet.<span>Add from Workouts or Routines.</span></p></div>`;
+  } else {
+    Object.entries(grouped).forEach(([bp, names]) => {
+      const ex = EXERCISES[bp];
+      html += `<div style="margin-bottom:1.2rem;">
+        <div class="plan-bp-label">${ex ? ex.icon : ''} ${ex ? ex.label : bp}</div>
+        ${names.map(name => `
+          <div class="plan-ex-row">
+            <span class="plan-ex-name">${name}</span>
+            <button class="btn-remove" onclick="removePlanEx('${bp}::${name}')">✕</button>
+          </div>`).join('')}
+      </div>`;
+    });
+    if (routine) {
+      html += `<div style="margin-bottom:1.2rem;">
+        <div class="plan-bp-label">◉ ACTIVE ROUTINE</div>
+        <div class="card">
+          <div class="routine-active-row">
+            <div>
+              <div class="routine-active-name">${routine}</div>
+              <div class="routine-active-sub">Currently active</div>
+            </div>
+            <button class="btn-remove" onclick="removePlanRoutine()">✕</button>
+          </div>
+        </div>
+      </div>`;
+    }
+  }
+
+  document.getElementById('myplan-content').innerHTML = html;
+}
+
+function removePlanEx(key) {
+  const plan = getPlan();
+  plan.workouts = (plan.workouts || []).filter(w => w !== key);
+  savePlan(plan);
+  renderMyPlan();
+}
+
+function removePlanRoutine() {
+  const plan = getPlan();
+  plan.routine = null;
+  savePlan(plan);
+  renderMyPlan();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════
+
+(function init() {
+  const user = getUser();
+  if (user) {
+    showScreen('dashboard');
+  } else {
+    showScreen('landing');
+  }
+  // Nutrient search live filter
+  document.getElementById('nutrient-search-input').addEventListener('input', renderNutrientSearch);
+})();
+</script>
+</body>
+</html>
